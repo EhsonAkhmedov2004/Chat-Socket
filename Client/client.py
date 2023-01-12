@@ -1,37 +1,17 @@
 from threading import Thread
-import asyncio
-
-
-# def B():
-# 	while True:
-# 		print("B")
-
-
-
-
-# def A():
-# 	count = 0
-# 	t = Thread(target=B)
-# 	t.start()
-# 	while True:
-		
-# 		print("A");
-
-# t = Thread(target=A)
-# t.start()
-# print("asd")
-# Import socket module
-
-
-
-
-
 import socket       
+import rich
+from rich.prompt import Prompt
+from rich.console import Console
 
 
-class UserIdentification:
-	def __init__(self,name):
-		self.name = name     
+
+console = Console()
+
+
+
+
+   
  
 # Create a socket object
 s = socket.socket()        
@@ -41,28 +21,51 @@ port = 8000
  
 # connect to the server on local computer
 s.connect(('127.0.0.1', port))
+
  
 online = True
 
 def GetMessages():
 
 	while online:
-		print(f"{s.recv(1024).decode()}")
+		try:
+			response = s.recv(1024).decode()
+
+			# if response['status'] == 0:
+			# 	console.log(f"[bold #1E90FF on red] No one is online in the chat now [bold #1E90FF on white](instead of you :)) ",justify="center")
+			# 	continue
+			#console.log(response['message'])
+			if "http" in response:
+				console.log(f"[bold #1E90FF underline on red]{response}",justify="right")
+
+			console.log(f"[bold #1E90FF on red]{response}",justify="right")
+		except:
+			console.print("( ~ Admin ) [italic #1E90FF]Good bye :)")	
+			break
+
 
 
 
 
 
 def SendMessages():
-	print("--- Hello User to the chat terminal application --- ( ~ Admin )")
-	name = input(" Please enter your name : ")
-	UI = UserIdentification(name)
-	print("( ~ Admin ) Good Chat and have a good day ...")
+	console.log("[bold red]( ~ Admin ) Hello User to the [bold #1E90FF] chat terminal application ",style="bold #1E90FF blink")
+	name = console.input(" [bold]Please enter your [green]name [red]~ ")
+	console.log("[bold red]( ~Admin ) [bold #1E90FF]Good Chat and have a good day ...")
 
 
 	while online:
-		userMessage = input()
-		s.send(bytes(f"{UI.name} : {userMessage} ",'utf-8'))
+
+		userMessage = console.input()
+		console.log(f"[bold #1E90FF on white]{userMessage}")
+
+		if userMessage == "QUIT":
+			
+			s.close()
+			break
+
+
+		s.send(bytes(f"{userMessage} ",'utf-8'))
 
 
 

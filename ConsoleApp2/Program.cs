@@ -7,40 +7,7 @@ using System;
 using ConsoleApp2.Help;
 using System.Linq;
 using static System.Console;
-
-
-
-//Let's start !.....
-
-
-
-
-        // if (bytesRead > 0)
-        // {
-        //     var message = help.Frombyte(state.buffer, 0, bytesRead);
-
-        //     WriteLine(message);
-
-        //     // logic for broadcast ....
-      
-        //     foreach(var each in connections) 
-        //     {
-        //         if (each != state.listener) 
-        //         {
-        //             each.Send(help.Fromstring(message));
-        //         }
-
-        //     }
-
-
-        //     state.listener.BeginReceive(state.buffer,
-        //                          0,
-        //                          StateObject.bufferSize,
-        //                          0,
-        //                          new AsyncCallback(ReadCallback), state);
-        // }
-
-
+using System.Text.Json;
 
 AsyncSocketListener socket = new AsyncSocketListener();
 
@@ -58,6 +25,10 @@ public struct StateObject
     public Socket listener = null;
 
 }
+
+
+
+
 class AsyncSocketListener
 {
     public ICollection<Socket> connections = new List<Socket> { };
@@ -76,70 +47,100 @@ class AsyncSocketListener
 
     private void ReadCallback(IAsyncResult ar) 
     {
+        StateObject state = (StateObject)ar.AsyncState;
 
-        StateObject state         = (StateObject)ar.AsyncState;
-
-        int         bytesRead     = state.listener.EndReceive(ar); // Got message from client....
-
-
-        if (bytesRead <= 0)
-            return;
-
-
-        var message = help.Frombyte(state.buffer, 0, bytesRead);
-
-        WriteLine(message);
-
-        // logic for broadcast ....
-      
-        foreach(var each in connections) 
+        try
         {
-            if (each != state.listener) 
-            {
-                each.Send(help.Fromstring(message));
-            }
 
+            
+
+            int         bytesRead     = state.listener.EndReceive(ar); // Got message from client....
+
+
+            if (bytesRead > 0){
+                
+
+        
+        
+
+                var message = help.Frombyte(state.buffer, 0, bytesRead);
+
+
+
+
+                // logic for broadcast ....
+        
+                foreach(var each in connections) 
+                {
+                    if (each != state.listener) 
+                    {
+                        each.Send(help.Fromstring(message));
+                        
+                    }
+
+
+
+                }
+
+
+
+                state.listener.BeginReceive(state.buffer,
+                    0,
+                    StateObject.bufferSize,
+                    0,
+                    new AsyncCallback(ReadCallback), state);    
+            }
+            
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine(ex);
+            connections.Remove(state.listener);
+            Console.WriteLine("listener has been disconnected .");
         }
 
-
-        state.listener.BeginReceive(state.buffer,
-            0,
-            StateObject.bufferSize,
-            0,
-            new AsyncCallback(ReadCallback), state);    
-            
+      
 
 
     }
     private void AcceptCallback(IAsyncResult ar)
     {
         allDone.Set();
+        Console.WriteLine("New client connected ... ");
 
         Socket listener = (Socket)ar.AsyncState, handler = listener!.EndAccept(ar);
+
         
-
-        StateObject state = new StateObject();
-
-        state.listener = handler;
-
-
-        connections.Add(state.listener);   
         
+            
+
+       StateObject state = new StateObject();
+
+       state.listener = handler;
+
+
+       connections.Add(state.listener);   
+            
         handler.BeginReceive(
 
-            state.buffer,
-            0,
-            StateObject.bufferSize,
-            0,
-            new AsyncCallback(ReadCallback),
-            state
+                state.buffer,
+                0,
+                StateObject.bufferSize,
+                0,
+                new AsyncCallback(ReadCallback),
+                state
 
-            );
+                );
+        
+
+
         
 
     }
+
     private void StartListening()
     {
+        Console.WriteLine("[INFO] : progress .... ");
         const string ip = "127.0.0.1";
         const int port = 8000;
 
@@ -155,17 +156,30 @@ class AsyncSocketListener
 
             while (true)
             {
-                allDone.Reset();
+                try
+                {
 
-                WriteLine("Waiting for connection .....");
+                    allDone.Reset();
 
-                listener.BeginAccept(
-                         new AsyncCallback(AcceptCallback),
-                         listener);
+                    WriteLine("Waiting for connection .....");
 
-                allDone.WaitOne();
+                    // quick logic...
+                    
+                    
+
+                    listener.BeginAccept(
+                            new AsyncCallback(AcceptCallback),
+                            listener);
+
+                    allDone.WaitOne();
+                }
+                catch(Exception ex) 
+                {
+                    WriteLine("Exception heheheh ");
+                }
             }
         }
+
         catch(Exception e)
         {
             Console.WriteLine(e);
